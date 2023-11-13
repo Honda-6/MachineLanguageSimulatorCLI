@@ -1,59 +1,71 @@
 #include "Instructions.cpp"
 using namespace std;
 
-
 void to_binary(unsigned char x, unsigned char eight = 8)
 {
-    if(!eight)
+    if (!eight)
     {
         return;
     }
-    to_binary(x/2,eight - 1);
+    to_binary(x / 2, eight - 1);
     cout << x % 2;
 }
 int main()
 {
     // Machine m1 {};
-    unsigned char x{0b00110110}, y{0b01100110};
-    short expx{((x >> 4) & 7) - 4}, expy{((y >> 4) & 7) - 4},expres{};
-    unsigned char mantissa{};
+    unsigned char x{0b11100011}, y{0b00110110}, mantissa{};
+    short ExpoRes{};
     float res{};
-    unsigned char mx{(x & 15)}, my{y & 15};
-    bool carry{};
-    if (expx > 0)
+    unsigned char mx{static_cast<unsigned char>(x & static_cast<unsigned char>(15))}, my{static_cast<unsigned char>(y & static_cast<unsigned char>(15))};
+    bool carry{}, neg{};
+    if (((x >> 4) & 7) - 4 > 0)
     {
-        mx <<= expx;
+        mx <<= (((x >> 4) & 7) - 4);
     }
     else
     {
-        mx >>= -expx;
+        mx >>= -(((x >> 4) & 7) - 4);
     }
-    if (expy > 0)
+    if ((((y >> 4) & 7) - 4) > 0)
     {
-        my <<= expy;
+        my <<= (((y >> 4) & 7) - 4);
     }
     else
     {
-        my >>= -expy;
+        my >>= -(((y >> 4) & 7) - 4);
     }
-    unsigned int h28{1};
-    while (h28 <= 128)
+    if (((x & 128) ^ (y & 128)))
     {
-        if ((mx & h28) ^ (my & h28))
+        if (x & 128)
+        {
+            neg = mx > my;
+            mx = (~mx + 1) & 15;
+        }
+        if (y & 128)
+        {
+
+            neg = my > mx;
+            my = (~my + 1) & 15;
+        }
+    }
+    unsigned int bit{1};
+    while (bit <= 128)
+    {
+        if ((mx & bit) ^ (my & bit))
         {
             if (!carry)
             {
-                mantissa |= h28;
+                mantissa |= bit;
             }
         }
         else
         {
-            if (((mx & h28) || (my & h28)))
+            if (carry)
             {
-                if (carry)
-                {
-                    mantissa |= h28;
-                }
+                mantissa |= bit;
+            }
+            if ((mx & bit))
+            {
                 carry = 1;
             }
             else
@@ -61,64 +73,79 @@ int main()
                 carry = 0;
             }
         }
-        h28 <<= 1;
+        bit <<= 1;
     }
-    h28 = 128;
-    if (carry)
+    bit = 128;
+    if ((x & 128) ^ (y & 128))
     {
-        while (!(mantissa & h28))
+        mantissa = mantissa & 15;
+    }
+    if (carry && !neg)
+    {
+        while (!(mantissa & bit))
         {
-            h28 >>= 1;
+            bit >>= 1;
         }
-        h28 <<= 1;
-        mantissa |= h28;
+        bit <<= 1;
+        mantissa |= bit;
     }
-    h28 = 128;
-    short i{};
-    while (!(mantissa & h28))
+    bit = 128;
+    char i{};
+    if (neg)
     {
-        h28 >>= 1;
+        mantissa = (~mantissa + 1) & 15;
+    }
+    while (!(mantissa & bit))
+    {
+        bit >>= 1;
         ++i;
-    } 
-    expres = 8 - i - 4;
-    if(expres > 0)
+    }
+    ExpoRes = 8 - i - 4;
+    if (ExpoRes > 0)
     {
-        mantissa >>= expres;
+        mantissa >>= ExpoRes;
     }
     else
     {
-        mantissa <<= -expres;
+        mantissa <<= -ExpoRes;
     }
-    unsigned char h8 = 8;
-    while(h8)
+    bit = 8;
+    while (bit)
     {
-        if(expres > 0)
+        if (ExpoRes > 0)
         {
-            res += ((h8 & mantissa) != 0) << (expres - 1);
+            res += ((bit & mantissa) != 0) << (ExpoRes - 1);
         }
         else
         {
-            if(h8 & mantissa)
-                res += 1.0/(((h8 & mantissa) != 0) << ((expres * -1) + 1));
+            if (bit & mantissa)
+            {
+                res += 1.0 / (((bit & mantissa) != 0) << ((ExpoRes * -1) + 1));
+            }
         }
-        expres--;
-        h8 >>= 1;
+        ExpoRes--;
+        bit >>= 1;
     }
-    expres = (8 - i);
+    ExpoRes = (8 - i);
     unsigned char resb{};
-    resb = (((res < 0) << 128) & 128);
-    resb |= (expres << 4);
-    resb |= mantissa;
-    cout <<"Floating Equivalent: " <<res << endl;
-    cout <<"Decimal Equivalent: " <<(unsigned short)resb << endl;
+    if (neg || ((x & 128) && (y & 128)))
+    {
+        resb |= 128;
+        res = -res;
+    }
+    resb |= (ExpoRes << 4);
+    resb |= (mantissa & 15);
+    cout << "Floating Equivalent: " << res << endl;
+    cout << "Unsigned Decimal Equivalent: " << (unsigned short)resb << endl;
+    cout << "Two's complement Decimal Equivalent: " << (short)((char)resb) << endl;
     cout << "Raw Binary: ";
     to_binary(resb);
     cout << "\n";
     // m1.Interface();
     //  Memory m1{};
     //  CPU_Registers cr1 {};
-    //  cout << m1 << endl;
-    //  cout << cr1 << endl;
+    //   << m1 << endl;
+    //   << cr1 << endl;
 
     return 0;
 }
