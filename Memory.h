@@ -12,6 +12,7 @@ public:
     unsigned char get_content() const;
     void set_content(const char* Hexbyte);
     void set_content(unsigned char data);
+    void clear();
     Memory_Address &operator=(const Memory_Address &m);
     virtual ~Memory_Address() override = default;
 };
@@ -24,6 +25,7 @@ public:
     Memory();
     Memory(const Memory &m);
     Memory_Address &operator[](unsigned char i);
+    void clear_memory();
     ~Memory() = default;
 };
 

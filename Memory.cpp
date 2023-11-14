@@ -48,6 +48,11 @@ void Memory_Address::set_content(unsigned char data)
     this->content = data;
 }
 
+void Memory_Address::clear()
+{
+    this->content = 0;
+}
+
 Memory_Address &Memory_Address::operator=(const Memory_Address &m)
 {
     if(this == &m || this->location== m.location)
@@ -76,28 +81,13 @@ Memory_Address &Memory::operator[](unsigned char i)
     return this->addresses[i];
 }
 
-std::string to_hex(unsigned short val)
-{
-    std::string Hexa {"  "};
-    if((val & 15) >= 10)
-    {
-        Hexa[1] = (val & 15) - 10 + 'A';
-    }
-    else
-    {
-        Hexa[1] = (val & 15) + '0';
-    }
-    val >>= 4;
-    if((val & 15) >= 10)
-    {
-        Hexa[0] = (val & 15) - 10 + 'A';
-    }
-    else
-    {
-        Hexa[0] = (val & 15) + '0';
-    }
-    return Hexa;
 
+void Memory::clear_memory()
+{
+    for(unsigned short i{}; i < 256; ++i)
+    {
+        this->addresses[i].clear();
+    }
 }
 std::ostream &operator<<( std::ostream &os,Memory &m)
 {

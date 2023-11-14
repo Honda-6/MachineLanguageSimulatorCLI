@@ -6,11 +6,12 @@ class Instruction
 {
 private:
     char op;
-    std::string operand;
+    char operand[4]{};
 public:
-    Instruction(char OP = 0, std::string Operands = "");
+    Instruction(char OP = 0, const char* operands = nullptr);
     char get_op() const;
-    std::string get_operand() const;
+    char* get_operand();
+    void set_op(char OP);
     ~Instruction() = default;
 };
 
@@ -18,9 +19,8 @@ class Machine
 {
 private:
     void load_from_memory(unsigned char addressR,unsigned char addressM);
-    void load_register(unsigned char addressR,const char* val);
+    void load_register(unsigned char addressR,unsigned char val);
     void store_in_memory(unsigned char addressR,unsigned char addressM);
-    void store_in_screen(unsigned char addressR);
     void move_pattern(unsigned char addressR1, unsigned char addressR2);
     void add(char operation,unsigned char DestinationAddress,unsigned char register1,unsigned char register2);
     void AND(unsigned char DestinationAddress,unsigned char register1,unsigned char register2);
@@ -29,7 +29,7 @@ private:
     void rotate_right(unsigned char addressR,char times);
     void rotate_left(unsigned char addressR,char times);
     void jump(unsigned char addressR,unsigned char addressM);
-
+    bool halt{};
 public:
     Machine() = default;
     Instruction command;
@@ -37,7 +37,8 @@ public:
     CPU_Registers cpu;
     unsigned char start_address{};
     unsigned short counter{};
-    void read();
+    void program();
+    //void read();
     void Interface();
     void execution();
     void reset();

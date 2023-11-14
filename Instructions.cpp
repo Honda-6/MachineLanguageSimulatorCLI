@@ -1,32 +1,35 @@
 #include "Instructions.h"
 
-Instruction::Instruction(char OP, std::string Operands)
-    : op{OP}, operand{Operands} {}
+Instruction::Instruction(char OP, const char *Operands)
+    : op{OP}
+{
+    for (unsigned char i{}; Operands && Operands[i] && i < 4; ++i)
+        this->operand[i] = Operands[i];
+}
 
 char Instruction::get_op() const
 {
     return this->op;
 }
-std::string Instruction::get_operand() const
+char *Instruction::get_operand()
 {
     return this->operand;
 }
-
+void Instruction::set_op(char OP)
+{
+    this->op = OP;
+}
 void Machine::load_from_memory(unsigned char addressR, unsigned char addressM)
 {
     this->cpu[addressR].set_content(this->memo[addressM].get_content());
 }
-void Machine::load_register(unsigned char addressR, const char *val)
+void Machine::load_register(unsigned char addressR, unsigned char val)
 {
     this->cpu[addressR].set_content(val);
 }
 void Machine::store_in_memory(unsigned char addressR, unsigned char addressM)
 {
     this->memo[addressM].set_content(this->cpu[addressR].get_content());
-}
-void Machine::store_in_screen(unsigned char addressR)
-{
-    this->memo[0].set_content(this->cpu[addressR].get_content());
 }
 void Machine::move_pattern(unsigned char addressR1, unsigned char addressR2)
 {
@@ -188,25 +191,94 @@ void Machine::jump(unsigned char addressR, unsigned char addressM)
 {
     if (this->cpu[0].get_content() == this->cpu[addressR].get_content())
         this->counter = addressM;
+    else
+        this->counter += 2;
+}
+void Machine::reset()
+{
+    this->memo.clear_memory();
+    this->cpu.clear_CPU();
+    this->halt = false;
+    this->counter = this->start_address = 0;
+}
+void Machine::execution()
+{
+    switch (memo[this->counter].get_content() / 16)
+    {
+    case 1:
+        this->load_from_memory(memo[this->counter].get_content() % 16, memo[this->counter + 1].get_content());
+        counter += 2;
+        break;
+    case 2:
+        this->load_register(memo[this->counter].get_content() % 16, memo[this->counter + 1].get_content());
+        counter += 2;
+        break;
+    case 3:
+        this->store_in_memory(memo[this->counter].get_content() % 16, memo[this->counter + 1].get_content());
+        counter += 2;
+        break;
+    case 4:
+        this->move_pattern(memo[this->counter + 1].get_content() / 16, memo[this->counter + 1].get_content() % 16);
+        counter += 2;
+        break;
+    case 5:
+        this->add('5', memo[this->counter].get_content() % 16, memo[this->counter + 1].get_content() / 16, memo[this->counter + 1].get_content() % 16);
+        counter += 2;
+        break;
+    case 6:
+        this->add('6', memo[this->counter].get_content() % 16, memo[this->counter + 1].get_content() / 16, memo[this->counter + 1].get_content() % 16);
+        counter += 2;
+        break;
+    case 7:
+        this->OR(memo[this->counter].get_content() % 16, memo[this->counter + 1].get_content() / 16, memo[this->counter + 1].get_content() % 16);
+        counter += 2;
+        break;
+    case 8:
+        this->AND(memo[this->counter].get_content() % 16, memo[this->counter + 1].get_content() / 16, memo[this->counter + 1].get_content() % 16);
+        counter += 2;
+        break;
+    case 9:
+        this->XOR(memo[this->counter].get_content() % 16, memo[this->counter + 1].get_content() / 16, memo[this->counter + 1].get_content() % 16);
+        counter += 2;
+        break;
+    case 10:
+        this->rotate_right(memo[this->counter].get_content() % 16, memo[this->counter + 1].get_content());
+        counter += 2;
+        break;
+    case 11:
+        this->jump(memo[this->counter].get_content() % 16, memo[this->counter + 1].get_content());
+        break;
+    case 13:
+        this->rotate_left(memo[this->counter].get_content() % 16, memo[this->counter + 1].get_content());
+        counter += 2;
+        break;
+    case 12:
+        halt = true;
+        counter += 2;
+        break;
+    default:
+        counter += 2;
+        break;
+    }
 }
 
 char spaces(unsigned char val)
 {
     char digits{};
-    if(val & 128)
-        digits+=2;
-    char signedval{static_cast<char> (val)};
-    val/=10;
-    signedval/=10;
-    while(val)
+    if (val & 128)
+        digits += 2;
+    char signedval{static_cast<char>(val)};
+    val /= 10;
+    signedval /= 10;
+    while (val)
     {
         digits++;
-        val/=10;
+        val /= 10;
     }
-    while(signedval)
+    while (signedval)
     {
         digits++;
-        signedval/=10;
+        signedval /= 10;
     }
     return digits;
 }
@@ -215,7 +287,7 @@ void Machine::Interface()
 {
     std::cout << std::setw(23) << "Memory" << std::setw(78) << "CPU"
               << "\n";
-    std::cout << "======================================================" << std::setw(76) << "=========================================================\n";
+    std::cout << "==========================================================" << std::setw(72) << "=========================================================\n";
     std::cout << "Address" << std::setw(25) << "Content" << std::setw(50) << "Register" << std::setw(27) << "Content\n";
     std::cout << "----------------------------------------------------------" << std::setw(72) << "---------------------------------------------------------\n";
     for (unsigned short i{}; i < 16; ++i)
@@ -226,25 +298,65 @@ void Machine::Interface()
         to_binary(cpu[i].get_content());
         std::cout << "\n----------------------------------------------------------" << std::setw(72) << "---------------------------------------------------------\n";
     }
-    std::cout << to_hex(memo[16].get_address()) << std::setw(10) << '|' << std::setw(10) << to_hex(memo[16].get_content())<< " / " << (short)memo[16].get_content() << " / " << (short)((char)memo[16].get_content()) << " / "  << std::fixed << std::setprecision(5) << to_float(memo[16].get_content()) << " / ";
+    std::cout << to_hex(memo[16].get_address()) << std::setw(10) << '|' << std::setw(10) << to_hex(memo[16].get_content()) << " / " << (short)memo[16].get_content() << " / " << (short)((char)memo[16].get_content()) << " / " << std::fixed << std::setprecision(5) << to_float(memo[16].get_content()) << " / ";
     to_binary(memo[16].get_content());
     std::cout << "\n----------------------------------------------------------\n";
     std::cout << to_hex(memo[17].get_address()) << std::setw(10) << '|' << std::setw(10) << to_hex(memo[17].get_content()) << " / " << (short)memo[17].get_content() << " / " << (short)((char)memo[17].get_content()) << " / " << std::fixed << std::setprecision(5) << to_float(memo[17].get_content()) << " / ";
     to_binary(memo[17].get_content());
     std::cout << std::setw(37 - spaces(memo[17].get_content()) - 1) << "Start Address: " << to_hex(start_address) << "\n";
     std::cout << "----------------------------------------------------------\n";
-    std::cout << to_hex(memo[18].get_address()) << std::setw(10) << '|' << std::setw(10) << to_hex(memo[18].get_content()) << " / " << (short)memo[18].get_content() << " / " << (short)((char)memo[18].get_content()) << " / " << std::fixed << std::setprecision(5)  << to_float(memo[18].get_content()) << " / ";
-    to_binary(memo[18].get_content());;
+    std::cout << to_hex(memo[18].get_address()) << std::setw(10) << '|' << std::setw(10) << to_hex(memo[18].get_content()) << " / " << (short)memo[18].get_content() << " / " << (short)((char)memo[18].get_content()) << " / " << std::fixed << std::setprecision(5) << to_float(memo[18].get_content()) << " / ";
+    to_binary(memo[18].get_content());
+    ;
     std::cout << std::setw(31 - spaces(memo[18].get_content()) - 1) << "Counter: " << to_hex(counter) << "\n";
     std::cout << "----------------------------------------------------------\n";
-    std::cout << to_hex(memo[19].get_address()) << std::setw(10) << '|' << std::setw(10) << to_hex(memo[19].get_content()) << " / " << (short)memo[19].get_content() << " / " << (short)((char)memo[19].get_content()) << " / "  << std::fixed << std::setprecision(5) << to_float(memo[19].get_content()) << " / ";
-    to_binary(memo[19].get_content());;
+    std::cout << to_hex(memo[19].get_address()) << std::setw(10) << '|' << std::setw(10) << to_hex(memo[19].get_content()) << " / " << (short)memo[19].get_content() << " / " << (short)((char)memo[19].get_content()) << " / " << std::fixed << std::setprecision(5) << to_float(memo[19].get_content()) << " / ";
+    to_binary(memo[19].get_content());
+    ;
     std::cout << std::setw(30 - spaces(memo[19].get_content()) - 1) << "Screen: " << (char)(memo[0].get_content()) << "\n";
     std::cout << "----------------------------------------------------------\n";
     for (unsigned short i{19}; i < 256; ++i)
     {
-        std::cout << to_hex(memo[i].get_address()) << std::setw(10) << '|' << std::setw(10) << to_hex(memo[i].get_content()) << " / " << (short)memo[i].get_content() << " / " << (short)((char)memo[i].get_content()) << " / " << std::fixed << std::setprecision(5)  << to_float(memo[i].get_content()) << " / ";
+        std::cout << to_hex(memo[i].get_address()) << std::setw(10) << '|' << std::setw(10) << to_hex(memo[i].get_content()) << " / " << (short)memo[i].get_content() << " / " << (short)((char)memo[i].get_content()) << " / " << std::fixed << std::setprecision(5) << to_float(memo[i].get_content()) << " / ";
         to_binary(memo[i].get_content());
         std::cout << "\n----------------------------------------------------------\n";
+    }
+}
+
+void Machine::program()
+{
+    std::FILE *f;
+    char start[4];
+    char x{'y'};
+    while (x == 'y' || x == 'Y')
+    {
+        f = std::fopen("commands.in", "r");
+        if (f)
+        {
+            start_address = to_decimal(std::fgets(start, 3, f));
+            unsigned short i{start_address};
+            while (!feof(f) && i < 256)
+            {
+                if (fgetc(f) >= 48)
+                {
+                    fseek(f, -1, SEEK_CUR);
+                    command.set_op(fgetc(f));
+                    fgets(command.get_operand(), 4, f);
+                    memo[i].set_content(to_decimal(command.get_op()) * 16 + to_decimal(command.get_operand()[0]));
+                    ++i;
+                    memo[i].set_content(to_decimal(command.get_operand()[1]) * 16 + to_decimal(command.get_operand()[2]));
+                    ++i;
+                }
+            }
+            std::fclose(f);
+        }
+        while (!halt && this->counter <= 255)
+        {
+            system("clear");
+            execution();
+            Interface();
+        }
+        this->reset();
+        std::cin >> x;
     }
 }
