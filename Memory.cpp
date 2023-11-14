@@ -18,25 +18,25 @@ unsigned char Memory_Address::get_content() const
 void Memory_Address::set_content(const char* Hexbyte)
 {
     unsigned char result{};
-    char size{},i{};
-    while(Hexbyte[size])
+    char size{}, i{};
+    while (Hexbyte[size])
     {
         ++size;
     }
     i = (--size);
-    while(i)
+    while (i > -1)
     {
-        if((Hexbyte[i] >= 65 && Hexbyte[i] <= 90))
+        if ((Hexbyte[i] >= 65 && Hexbyte[i] <= 90))
         {
-            result = (10 + (Hexbyte[i] - 64)) * ((size - i) ? 1 : 16);
+            result += (10 + (Hexbyte[i] - 65)) * ((size - i == 0) ? 1 : 16);
         }
-        else if(Hexbyte[i] >= 97 && Hexbyte[i] <= 122)
+        else if (Hexbyte[i] >= 97 && Hexbyte[i] <= 122)
         {
-            result = (10 + (Hexbyte[i] - 97)) * ((size - i) ? 1 : 16);
+            result += (10 + (Hexbyte[i] - 97)) * ((size - i == 0) ? 1 : 16);
         }
         else
         {
-            result = (Hexbyte[i] - 48) * ((size - i) ? 1 : 16);
+            result += (Hexbyte[i] - 48) * ((size - i == 0) ? 1 : 16);
         }
         i--;
     }

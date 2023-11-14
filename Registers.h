@@ -13,6 +13,10 @@ public:
     void set_content(const char* Hexbyte);
     void set_content(unsigned char data);
     Register_Address &operator=(const Register_Address &ra);
+    Register_Address &operator=(Register_Address &&ra);
+    unsigned char operator&(const Register_Address &ra);
+    unsigned char operator|(const Register_Address &ra);
+    unsigned char operator^(const Register_Address &ra);
     virtual ~Register_Address() = default;
 };
 class CPU_Registers
