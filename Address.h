@@ -15,23 +15,33 @@ public:
 };
 std::string to_hex(unsigned short val)
 {
-    std::string Hexa{"  "};
-    if ((val & 15) >= 10)
+    std::string Hexa{};
+    if (val >> 8)
     {
-        Hexa[1] = (val & 15) - 10 + 'A';
+        if (((val >> 8) & 0xf) >= 10)
+        {
+            Hexa.push_back(((val >> 8) & 0xf) - 10 + 'A');
+        }
+        else
+        {
+            Hexa.push_back(((val >> 8) & 0xf) + '0');
+        }
+    }
+    if (((val >> 4) & 0xf) >= 10)
+    {
+        Hexa.push_back(((val >> 4) & 0xf) - 10 + 'A');
     }
     else
     {
-        Hexa[1] = (val & 15) + '0';
+        Hexa.push_back(((val >> 4) & 0xf) + '0');
     }
-    val >>= 4;
     if ((val & 15) >= 10)
     {
-        Hexa[0] = (val & 15) - 10 + 'A';
+        Hexa.push_back((val & 15) - 10 + 'A');
     }
     else
     {
-        Hexa[0] = (val & 15) + '0';
+        Hexa.push_back((val & 15) + '0');
     }
     return Hexa;
 }
@@ -40,7 +50,7 @@ char to_hexa_digit(unsigned char value)
     char Hexa{};
     if (value >= 10)
     {
-        Hexa = (value%10) + 'A';
+        Hexa = (value % 10) + 'A';
     }
     else
     {
