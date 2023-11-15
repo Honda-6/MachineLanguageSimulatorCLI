@@ -6,10 +6,11 @@ class Instruction
 {
 private:
     char op;
-    char operand[4]{};
+    char operand[4] = "000";
 public:
-    Instruction(char OP = 0, const char* operands = nullptr);
+    Instruction(char OP = '0', const char* operands = nullptr);
     char get_op() const;
+    void clear();
     char* get_operand();
     void set_op(char OP);
     ~Instruction() = default;
@@ -29,6 +30,7 @@ private:
     void rotate_right(unsigned char addressR,char times);
     void rotate_left(unsigned char addressR,char times);
     void jump(unsigned char addressR,unsigned char addressM);
+    char menu();
     bool halt{};
 public:
     Machine() = default;
@@ -38,7 +40,7 @@ public:
     unsigned char start_address{};
     unsigned short counter{};
     void program();
-    //void read();
+    bool read();
     void Interface();
     void execution();
     void reset();

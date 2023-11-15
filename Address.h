@@ -35,6 +35,19 @@ std::string to_hex(unsigned short val)
     }
     return Hexa;
 }
+char to_hexa_digit(unsigned char value)
+{
+    char Hexa{};
+    if (value >= 10)
+    {
+        Hexa = (value%10) + 'A';
+    }
+    else
+    {
+        Hexa = value + 48;
+    }
+    return Hexa;
+}
 float to_float(unsigned char bitpattern)
 {
     char exponent = ((bitpattern >> 4) & 7) - 4, bit = 8;
