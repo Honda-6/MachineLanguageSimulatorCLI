@@ -32,17 +32,17 @@ private:
     void jump(unsigned char addressR,unsigned char addressM);
     char menu();
     bool halt{};
-public:
-    Machine() = default;
+    bool read();
+    void Interface();
+    void execution();
+    void reset();
     Instruction command;
     Memory memo;
     CPU_Registers cpu;
     unsigned char start_address{};
     unsigned short counter{};
+public:
+    Machine() = default;
     void program();
-    bool read();
-    void Interface();
-    void execution();
-    void reset();
     ~Machine() = default;
 };
